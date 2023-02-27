@@ -1,12 +1,54 @@
 /* eslint-disable import/no-cycle */
 import {
-  deleteTodo, toggleCompleteTodo, updateTodo, toDos,
+  deleteTodo, toggleCompleteTodo, updateTodo, toDos, switchElements,
 } from './crud.js';
 import { toDosContainer } from './selectors.js';
-import addDragListeners from './drag.js';
+import stringToBool from './stringToBool.js';
 
 const createTodo = (object) => {
-  // Create
+  const addDragListeners = () => {
+    const htmlToDos = document.querySelectorAll('.toDo');
+    htmlToDos.forEach((element) => {
+      element.addEventListener('dragstart', (e) => {
+        element.classList.add('opacity');
+        const context = {
+          description: element.attributes.description.value,
+          completed: stringToBool(element.attributes.completed.value),
+          index: element.attributes.index.value,
+        };
+        const toSend = JSON.stringify(context);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', toSend);
+      });
+      element.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        return false;
+      });
+      element.addEventListener('dragenter', () => {
+        element.classList.add('over');
+      });
+      element.addEventListener('dragleave', () => {
+        element.classList.remove('over');
+      });
+      element.addEventListener('dragend', () => {
+        element.classList.remove('opacity');
+        element.draggable = false;
+      });
+      element.addEventListener('drop', (e) => {
+        e.stopPropagation();
+        element.classList.remove('over');
+        const target = {
+          description: element.attributes.description.value,
+          completed: stringToBool(element.attributes.completed.value),
+          index: element.attributes.index.value,
+        };
+        const origin = JSON.parse(e.dataTransfer.getData('text/plain'));
+        switchElements(origin, target);
+        e.stopImmediatePropagation();
+        return false;
+      }, false);
+    });
+  };
   const container = document.createElement('div');
   container.tabIndex = 1;
   container.classList.add('toDo');
@@ -24,19 +66,14 @@ const createTodo = (object) => {
   description.classList.add('description');
   description.tabIndex = -1;
   if (!object.completed) {
-    square.classList.add('fa-regular');
-    square.classList.add('fa-square');
+    square.classList.add('fa-regular', 'fa-square');
     description.classList.remove('finished');
   } else {
     description.classList.add('finished');
-    square.classList.add('fa-solid');
-    square.classList.add('fa-check');
+    square.classList.add('fa-solid', 'fa-check');
   }
   const dots = document.createElement('i');
-  dots.classList.add('fa-solid');
-  dots.classList.add('fa-ellipsis-vertical');
-  dots.classList.add('fa-2x');
-  dots.classList.add('dots');
+  dots.classList.add('fa-solid', 'fa-ellipsis-vertical', 'fa-2x', 'dots');
   dots.id = 'dots';
   const trashCan = document.createElement('i');
   trashCan.classList.add('fa-solid', 'fa-trash', 'display-none');
